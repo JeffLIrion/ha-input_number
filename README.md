@@ -5,6 +5,8 @@ This component is to the built-in [`input_number`](https://www.home-assistant.io
 1. Its value can track other entities by way of a template.
 2. When its value is changed, it can run a script.
 
+It is also completely compatible with the built-in `input_number` integration, so it will not break your existing configuration.
+
 
 ## Configuration
 

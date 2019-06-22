@@ -1,10 +1,10 @@
 {
   "domain": "input_number",
-  "name": "Input number",
-  "documentation": "https://www.home-assistant.io/components/input_number",
+  "name": "Input Number",
+  "documentation": "https://github.com/JeffLIrion/ha-input_number/blob/master/README.md",
   "requirements": [],
   "dependencies": [],
   "codeowners": [
-    "@home-assistant/core"
+    "@JeffLIrion"
   ]
 }

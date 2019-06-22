@@ -18,4 +18,7 @@ In addition to the parameters for a standard [`input_number`](https://www.home-a
 * **entity_id**: a list of entity ID's involved in the `value_template` and `icon_template` templates
 * **value_changed_script**: a script or sequence of actions that will be performed when `value_template` changes (but not when `input_number.set_value` or `input_number.set_value_no_script` are called); the new value will be provided as the variable `value`
 
+
+### Example Configuration
+
 An example configuration can be found in the [README](https://github.com/JeffLIrion/ha-input_number/blob/master/README.md#example-configuration).

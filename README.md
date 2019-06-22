@@ -6,6 +6,8 @@ This component is to the built-in [`input_number`](https://www.home-assistant.io
 2. When its value is changed, it can run a script.
 
 
+## Configuration
+
 In addition to the parameters for a standard [`input_number`](https://www.home-assistant.io/components/input_number/), its configuration variables are:
 
 * **set_value_script**: a script or sequence of actions to perform when changing the value

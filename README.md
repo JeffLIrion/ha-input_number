@@ -1,3 +1,8 @@
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+
+**HACS URL:** [JeffLIrion/ha-input_number](https://github.com/JeffLIrion/ha-input_number)
+
+
 # Input Number
 
 This component is to the built-in [`input_number`](https://www.home-assistant.io/components/input_number/) what a template switch is to an input boolean.  It accomplishes two things:

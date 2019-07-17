@@ -17,7 +17,7 @@ It is also completely compatible with the built-in `input_number` integration, s
 
 In addition to the parameters for a standard [`input_number`](https://www.home-assistant.io/components/input_number/), its configuration variables are:
 
-* **set_value_script**: a script or sequence of actions to perform when changing the value
+* **set_value_script**: a script or sequence of actions to perform when changing the value; the new value will be provided as the variable `value`
 * **value_template**: a template that will provide the state for the `input_number`
 * **icon_template**: a template for this entity's icon
 * **entity_id**: a list of entity ID's involved in the `value_template` and `icon_template` templates

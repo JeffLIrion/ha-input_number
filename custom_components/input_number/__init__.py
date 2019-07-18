@@ -62,12 +62,15 @@ def _cv_input_number(cfg):
 #                              Template Number                                #
 #                                                                             #
 # =========================================================================== #
-from homeassistant.core import callback
-from homeassistant.const import (
-    CONF_ENTITY_ID, CONF_ICON_TEMPLATE, CONF_VALUE_TEMPLATE, EVENT_HOMEASSISTANT_START, MATCH_ALL)
-from homeassistant.exceptions import TemplateError
-from homeassistant.helpers.event import async_track_state_change
-from homeassistant.helpers.script import Script
+# pylint: disable=C0413
+from homeassistant.core import callback                            # noqa: E402
+from homeassistant.const import (                                  # noqa: E402
+    CONF_ENTITY_ID, CONF_ICON_TEMPLATE, CONF_VALUE_TEMPLATE,
+    EVENT_HOMEASSISTANT_START, MATCH_ALL)
+from homeassistant.exceptions import TemplateError                 # noqa: E402
+from homeassistant.helpers.event import async_track_state_change   # noqa: E402
+from homeassistant.helpers.script import Script                    # noqa: E402
+# pylint: enable=C0413
 
 
 CONF_SET_VALUE_SCRIPT = 'set_value_script'
@@ -80,8 +83,9 @@ def _cv_template_number(cfg):
     """Configure validation helper for template number (voluptuous)."""
     _cv_input_number(cfg)
 
-    if CONF_VALUE_TEMPLATE in cfg and not CONF_SET_VALUE_SCRIPT in cfg:
-        raise vol.Invalid('{} cannot be provided without {}'.format(CONF_VALUE_TEMPLATE, CONF_SET_VALUE_SCRIPT))
+    if CONF_VALUE_TEMPLATE in cfg and CONF_SET_VALUE_SCRIPT not in cfg:
+        raise vol.Invalid('{} cannot be provided without {}'.format(
+            CONF_VALUE_TEMPLATE, CONF_SET_VALUE_SCRIPT))
 
     return cfg
 
@@ -410,12 +414,14 @@ class TemplateNumber(InputNumber):
         if self._value_template:
             try:
                 value = self._value_template.async_render()
-                if value not in ['None', 'unknown'] and self._current_value != float(value):
+                if value not in ['None', 'unknown'] and\
+                   self._current_value != float(value):
                     self._current_value = float(value)
 
                     if self._value_changed_script:
                         await self._value_changed_script.async_run(
-                            {"value": self._current_value}, context=self._context)
+                            {"value": self._current_value},
+                            context=self._context)
 
             except TemplateError as ex:
                 _LOGGER.error(ex)
@@ -427,4 +433,5 @@ class TemplateNumber(InputNumber):
                 if ex.args and ex.args[0].startswith(
                         "UndefinedError: 'None' has no attribute"):
                     # Common during HA startup - so just a warning
-                    _LOGGER.warning('Could not render icon template for %s, the state is unknown.', self._name)
+                    _LOGGER.warning('Could not render icon template for %s, '
+                                    'the state is unknown.', self._name)

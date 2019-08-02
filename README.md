@@ -1,3 +1,8 @@
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+
+**HACS URL:** [JeffLIrion/ha-input_number](https://github.com/JeffLIrion/ha-input_number)
+
+
 # Input Number
 
 This component is to the built-in [`input_number`](https://www.home-assistant.io/components/input_number/) what a template switch is to an input boolean.  It accomplishes two things:
@@ -5,12 +10,14 @@ This component is to the built-in [`input_number`](https://www.home-assistant.io
 1. Its value can track other entities by way of a template.
 2. When its value is changed, it can run a script.
 
+It is also completely compatible with the built-in `input_number` integration, so it will not break your existing configuration.
+
 
 ## Configuration
 
 In addition to the parameters for a standard [`input_number`](https://www.home-assistant.io/components/input_number/), its configuration variables are:
 
-* **set_value_script**: a script or sequence of actions to perform when changing the value
+* **set_value_script**: a script or sequence of actions to perform when changing the value; the new value will be provided as the variable `value`
 * **value_template**: a template that will provide the state for the `input_number`
 * **icon_template**: a template for this entity's icon
 * **entity_id**: a list of entity ID's involved in the `value_template` and `icon_template` templates

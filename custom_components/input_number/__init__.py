@@ -3,18 +3,27 @@ import logging
 
 import voluptuous as vol
 
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.config_validation import ENTITY_SERVICE_SCHEMA
 from homeassistant.const import (
-    ATTR_ENTITY_ID,
-    ATTR_UNIT_OF_MEASUREMENT,
     ATTR_MODE,
+    ATTR_UNIT_OF_MEASUREMENT,
+    CONF_ENTITY_ID,
     CONF_ICON,
-    CONF_NAME,
+    CONF_ICON_TEMPLATE,
     CONF_MODE,
+    CONF_NAME,
+    CONF_VALUE_TEMPLATE,
+    EVENT_HOMEASSISTANT_START,
+    MATCH_ALL,
+    SERVICE_RELOAD,
 )
+from homeassistant.core import callback
+from homeassistant.exceptions import TemplateError
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.script import Script
+import homeassistant.helpers.service
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,10 +48,6 @@ SERVICE_SET_VALUE = "set_value"
 SERVICE_INCREMENT = "increment"
 SERVICE_DECREMENT = "decrement"
 
-SERVICE_SET_VALUE_SCHEMA = ENTITY_SERVICE_SCHEMA.extend(
-    {vol.Required(ATTR_VALUE): vol.Coerce(float)}
-)
-
 
 def _cv_input_number(cfg):
     """Configure validation helper for input number (voluptuous)."""
@@ -58,30 +63,9 @@ def _cv_input_number(cfg):
     return cfg
 
 
-# =========================================================================== #
-#                                                                             #
-#                              Template Number                                #
-#                                                                             #
-# =========================================================================== #
-# pylint: disable=C0413
-from homeassistant.core import callback  # noqa: E402
-from homeassistant.const import (  # noqa: E402
-    CONF_ENTITY_ID,  # noqa: E402
-    CONF_ICON_TEMPLATE,  # noqa: E402
-    CONF_VALUE_TEMPLATE,  # noqa: E402
-    EVENT_HOMEASSISTANT_START,  # noqa: E402
-    MATCH_ALL,  # noqa: E402
-)
-from homeassistant.exceptions import TemplateError  # noqa: E402
-from homeassistant.helpers.event import async_track_state_change  # noqa: E402
-from homeassistant.helpers.script import Script  # noqa: E402
-
-# pylint: enable=C0413
-
-
+# (Start) Template Number
 CONF_SET_VALUE_SCRIPT = "set_value_script"
 CONF_VALUE_CHANGED_SCRIPT = "value_changed_script"
-
 SERVICE_SET_VALUE_NO_SCRIPT = "set_value_no_script"
 
 
@@ -97,6 +81,9 @@ def _cv_template_number(cfg):
         )
 
     return cfg
+
+
+# (End) Template Number
 
 
 CONFIG_SCHEMA = vol.Schema(
@@ -116,12 +103,13 @@ CONFIG_SCHEMA = vol.Schema(
                     vol.Optional(CONF_MODE, default=MODE_SLIDER): vol.In(
                         [MODE_BOX, MODE_SLIDER]
                     ),
-                    # TemplateNumber
+                    # (Start) Template Number
                     vol.Optional(CONF_VALUE_TEMPLATE): cv.template,
                     vol.Optional(CONF_SET_VALUE_SCRIPT): cv.SCRIPT_SCHEMA,
                     vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
                     vol.Optional(CONF_ICON_TEMPLATE): cv.template,
                     vol.Optional(CONF_VALUE_CHANGED_SCRIPT): cv.SCRIPT_SCHEMA,
+                    # (End) Template Number
                 },
                 _cv_template_number,
             )
@@ -130,12 +118,57 @@ CONFIG_SCHEMA = vol.Schema(
     required=True,
     extra=vol.ALLOW_EXTRA,
 )
+RELOAD_SERVICE_SCHEMA = vol.Schema({})
 
 
 async def async_setup(hass, config):
     """Set up an input slider."""
     component = EntityComponent(_LOGGER, DOMAIN, hass)
 
+    entities = await _async_process_config(hass, config)
+
+    async def reload_service_handler(service_call):
+        """Remove all entities and load new ones from config."""
+        conf = await component.async_prepare_reload()
+        if conf is None:
+            return
+        new_entities = await _async_process_config(hass, conf)
+        if new_entities:
+            await component.async_add_entities(new_entities)
+
+    homeassistant.helpers.service.async_register_admin_service(
+        hass,
+        DOMAIN,
+        SERVICE_RELOAD,
+        reload_service_handler,
+        schema=RELOAD_SERVICE_SCHEMA,
+    )
+
+    component.async_register_entity_service(
+        SERVICE_SET_VALUE,
+        {vol.Required(ATTR_VALUE): vol.Coerce(float)},
+        "async_set_value",
+    )
+
+    # (Start) Template Number
+    component.async_register_entity_service(
+        SERVICE_SET_VALUE_NO_SCRIPT,
+        {vol.Required(ATTR_VALUE): vol.Coerce(float)},
+        "async_set_value_no_script",
+    )
+    # (End) Template Number
+
+    component.async_register_entity_service(SERVICE_INCREMENT, {}, "async_increment")
+
+    component.async_register_entity_service(SERVICE_DECREMENT, {}, "async_decrement")
+
+    if entities:
+        await component.async_add_entities(entities)
+    return True
+
+
+async def _async_process_config(hass, config):
+    """Process config and create list of entities."""
     entities = []
 
     for object_id, cfg in config[DOMAIN].items():
@@ -148,7 +181,7 @@ async def async_setup(hass, config):
         unit = cfg.get(ATTR_UNIT_OF_MEASUREMENT)
         mode = cfg.get(CONF_MODE)
 
-        # Template Number
+        # (Start) Template Number
         if CONF_SET_VALUE_SCRIPT in cfg:
             icon_template = cfg.get(CONF_ICON_TEMPLATE)
             set_value_script = cfg.get(CONF_SET_VALUE_SCRIPT)
@@ -191,6 +224,7 @@ async def async_setup(hass, config):
             )
 
             continue
+        # (End) Template Number
 
         entities.append(
             InputNumber(
@@ -198,29 +232,7 @@ async def async_setup(hass, config):
             )
         )
 
-    if not entities:
-        return False
-
-    component.async_register_entity_service(
-        SERVICE_SET_VALUE, SERVICE_SET_VALUE_SCHEMA, "async_set_value"
-    )
-
-    component.async_register_entity_service(
-        SERVICE_INCREMENT, ENTITY_SERVICE_SCHEMA, "async_increment"
-    )
-
-    component.async_register_entity_service(
-        SERVICE_DECREMENT, ENTITY_SERVICE_SCHEMA, "async_decrement"
-    )
-
-    component.async_register_entity_service(
-        SERVICE_SET_VALUE_NO_SCRIPT,
-        SERVICE_SET_VALUE_SCHEMA,
-        "async_set_value_no_script",
-    )
-
-    await component.async_add_entities(entities)
-    return True
+    return entities
 
 
 class InputNumber(RestoreEntity):

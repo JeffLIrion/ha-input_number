@@ -44,7 +44,6 @@ from .template_number import (
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "input_number"
-ENTITY_ID_FORMAT = DOMAIN + ".{}"
 
 CONF_INITIAL = "initial"
 CONF_MIN = "min"
@@ -253,7 +252,7 @@ class InputNumber(RestoreEntity):
     def from_yaml(cls, config: typing.Dict) -> "InputNumber":
         """Return entity instance initialized from yaml storage."""
         input_num = cls(config)
-        input_num.entity_id = ENTITY_ID_FORMAT.format(config[CONF_ID])
+        input_num.entity_id = f"{DOMAIN}.{config[CONF_ID]}"
         input_num.editable = False
         return input_num
 
@@ -332,44 +331,22 @@ class InputNumber(RestoreEntity):
     async def async_set_value(self, value):
         """Set new value."""
         num_value = float(value)
+
         if num_value < self._minimum or num_value > self._maximum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                num_value,
-                self._minimum,
-                self._maximum,
+            raise vol.Invalid(
+                f"Invalid value for {self.entity_id}: {value} (range {self._minimum} - {self._maximum})"
             )
-            return
+
         self._current_value = num_value
         self.async_write_ha_state()
 
     async def async_increment(self):
         """Increment value."""
-        new_value = self._current_value + self._step
-        if new_value > self._maximum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                new_value,
-                self._minimum,
-                self._maximum,
-            )
-            return
-        self._current_value = new_value
-        self.async_write_ha_state()
+        await self.async_set_value(min(self._current_value + self._step, self._maximum))
 
     async def async_decrement(self):
         """Decrement value."""
-        new_value = self._current_value - self._step
-        if new_value < self._minimum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                new_value,
-                self._minimum,
-                self._maximum,
-            )
-            return
-        self._current_value = new_value
-        self.async_write_ha_state()
+        await self.async_set_value(max(self._current_value - self._step, self._minimum))
 
     async def async_update_config(self, config: typing.Dict) -> None:
         """Handle when the config is updated."""
@@ -382,17 +359,7 @@ class InputNumber(RestoreEntity):
     # TemplateNumber
     async def async_set_value_no_script(self, value):
         """Set new value."""
-        num_value = float(value)
-        if num_value < self._minimum or num_value > self._maximum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                num_value,
-                self._minimum,
-                self._maximum,
-            )
-            return
-        self._current_value = num_value
-        await self.async_update_ha_state()
+        await self.async_set_value(value)
 
 
 class TemplateNumber(InputNumber):
@@ -432,7 +399,7 @@ class TemplateNumber(InputNumber):
     ) -> "TemplateNumber":  # pylint: disable=arguments-differ
         """Return entity instance initialized from yaml storage."""
         template_num = cls(config, hass)
-        template_num.entity_id = ENTITY_ID_FORMAT.format(config[CONF_ID])
+        template_num.entity_id = f"{DOMAIN}.{config[CONF_ID]}"
         template_num.editable = False
         return template_num
 
@@ -477,14 +444,12 @@ class TemplateNumber(InputNumber):
     async def async_set_value(self, value):
         """Set new value."""
         num_value = float(value)
+
         if num_value < self._minimum or num_value > self._maximum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                num_value,
-                self._minimum,
-                self._maximum,
+            raise vol.Invalid(
+                f"Invalid value for {self.entity_id}: {value} (range {self._minimum} - {self._maximum})"
             )
-            return
+
         self._current_value = num_value
 
         # This is the only part of the function that differs from `InputNumber.async_set_value()`
@@ -499,49 +464,11 @@ class TemplateNumber(InputNumber):
 
     async def async_increment(self):
         """Increment value."""
-        new_value = self._current_value + self._step
-        if new_value > self._maximum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                new_value,
-                self._minimum,
-                self._maximum,
-            )
-            return
-        self._current_value = new_value
-
-        # This is the only part of the function that differs from `InputNumber.async_increment()`
-        if not self._set_value_script:
-            self.async_write_ha_state()
-            return
-
-        await self._set_value_script.async_run(
-            {"value": self._current_value}, context=self._context
-        )
-        await self.async_update_ha_state()
+        await self.async_set_value(min(self._current_value + self._step, self._maximum))
 
     async def async_decrement(self):
         """Decrement value."""
-        new_value = self._current_value - self._step
-        if new_value < self._minimum:
-            _LOGGER.warning(
-                "Invalid value: %s (range %s - %s)",
-                new_value,
-                self._minimum,
-                self._maximum,
-            )
-            return
-        self._current_value = new_value
-
-        # This is the only part of the function that differs from `InputNumber.async_decrement()`
-        if not self._set_value_script:
-            self.async_write_ha_state()
-            return
-
-        await self._set_value_script.async_run(
-            {"value": self._current_value}, context=self._context
-        )
-        await self.async_update_ha_state()
+        await self.async_set_value(max(self._current_value - self._step, self._minimum))
 
     async def async_update(self):
         """Update the state from the template."""

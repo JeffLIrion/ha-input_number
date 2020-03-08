@@ -359,7 +359,7 @@ class InputNumber(RestoreEntity):
     # TemplateNumber
     async def async_set_value_no_script(self, value):
         """Set new value."""
-        await self.async_set_value(value)
+        await InputNumber.async_set_value(self, value)
 
 
 class TemplateNumber(InputNumber):

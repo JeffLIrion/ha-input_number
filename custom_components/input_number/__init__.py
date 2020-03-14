@@ -427,19 +427,8 @@ class TemplateNumber(InputNumber):
                 EVENT_HOMEASSISTANT_START, template_number_startup
             )
 
-        # The rest of this function is the same as for `InputNumber`
+        # Call `InputNumber.async_added_to_hass`
         await super().async_added_to_hass()
-        if self._current_value is not None:
-            return
-
-        state = await self.async_get_last_state()
-        value = state and float(state.state)
-
-        # Check against None because value can be 0
-        if value is not None and self._minimum <= value <= self._maximum:
-            self._current_value = value
-        else:
-            self._current_value = self._minimum
 
     async def async_set_value(self, value):
         """Set new value."""
